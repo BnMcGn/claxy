@@ -1,4 +1,6 @@
 ;;;; package.lisp
 
 (defpackage #:claxy
-  (:use #:cl #:alexandria))
+  (:use #:cl #:alexandria)
+  (:export
+   #:middleware))

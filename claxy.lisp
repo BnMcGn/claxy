@@ -42,4 +42,6 @@
         |#
         (list status (process-returned-headers headers) (ensure-list body)))
     (dex:http-request-failed (e)
-      (list (dex:response-status e) (dex:response-headers e) (dex:response-body e)))))
+      (list (dex:response-status e)
+            (process-returned-headers (dex:response-headers e))
+            (list (dex:response-body e))))))

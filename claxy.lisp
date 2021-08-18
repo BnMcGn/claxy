@@ -8,6 +8,19 @@
         when (starts-with-subseq match path)
           do (return (concatenate 'string new (subseq path (length match))))))
 
+(defun process-outgoing-headers (headers remote-addr)
+  (let ((headers (alexandria:hash-table-alist headers)))
+    (when (and remote-addr (< 0 (length remote-addr)))
+      (unless (assoc "x-real-ip" headers :test #'string-equal)
+        (push (cons "X-Real-Ip" remote-addr) headers))
+      (alexandria:if-let ((forfor (assoc "x-forwarded-for" headers :test #'string-equal)))
+        (unless (alexandria:ends-with-subseq remote-addr (second forfor))
+          (push (cons (car forfor)
+                      (concatenate 'string (second forfor) ", " remote-addr))
+                headers))
+        (push (cons "X-Forwarded-For" remote-addr) headers)))
+    headers))
+
 (defun process-returned-headers (headers)
   (loop for k being the hash-key using (hash-value v) of headers
         for kx = (alexandria:make-keyword (string-upcase k))
@@ -27,19 +40,10 @@
   (handler-case
       (multiple-value-bind (body status headers uri stream)
           (dex:request url
-                       ;; :want-stream t
                        :stream (getf env :raw-body)
                        :method (getf env :request-method)
-                       :headers (hash-table-alist (getf env :headers)))
+                       :headers (process-outgoing-headers (getf env :headers) (getf env :remote-addr)))
         (declare (ignore uri stream))
-        #|
-        (lambda (responder)
-          (let ((writer (funcall responder (list status headers))))
-            (loop for chunk = (read stream :eof-value :done)
-                  until (eq chunk :done)
-                  do (funcall writer chunk)
-                  finally (funcall writer nil :close t))))
-        |#
         (list status (process-returned-headers headers) (ensure-list body)))
     (dex:http-request-failed (e)
       (list (dex:response-status e)

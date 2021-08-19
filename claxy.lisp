@@ -9,7 +9,11 @@
           do (return (concatenate 'string new (subseq path (length match))))))
 
 (defun process-outgoing-headers (headers remote-addr)
-  (let ((headers (alexandria:hash-table-alist headers)))
+  (let* ((headers (alexandria:hash-table-alist headers))
+         ;;Nuke the host header. It will be wrong. Dexador should reset.
+         (headers (remove-if
+                   (lambda (x) (string-equal (car x) "host"))
+                   headers)))
     (when (and remote-addr (< 0 (length remote-addr)))
       (unless (assoc "x-real-ip" headers :test #'string-equal)
         (push (cons "X-Real-Ip" remote-addr) headers))

@@ -26,7 +26,7 @@
     headers))
 
 (defun process-returned-headers (headers)
-  (loop for k being the hash-key using (hash-value v) of headers
+  (loop for k being the hash-key of headers using (hash-value v)
         for kx = (alexandria:make-keyword (string-upcase k))
         collect kx
         collect (case kx
